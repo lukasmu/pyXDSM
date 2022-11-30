@@ -155,6 +155,8 @@ class XDSM(object):
         faded=False,
         label_width=None,
         spec_name=None,
+        after=None,
+        before=None
     ):
         """
         Add a "system" block, which will be placed on the diagonal of the XDSM diagram.
@@ -190,12 +192,28 @@ class XDSM(object):
         spec_name : str
             The spec name used for the spec file.
 
+        after : str or None
+            If a valid node_name of another component is given this node will be inserted after
+            the other component. Mutually exclusive with before.
+
+        before : str or None
+            If a valid node_name of another component is given this node will be inserted before
+            the other component. Mutually exclusive with after.
+
         """
         if spec_name is None:
             spec_name = node_name
 
+        if after and before:
+            raise ValueError("The 'after' and 'before' arguments are mutually exclusive")
+        index = len(self.systems)
+        if after:
+            index = next((i for i, system in enumerate(self.systems) if system.node_name == after), index-1) + 1
+        if before:
+            index = next((i for i, system in enumerate(self.systems) if system.node_name == before), index)
+
         sys = System(node_name, style, label, stack, faded, label_width, spec_name)
-        self.systems.append(sys)
+        self.systems.insert(index, sys)
         return sys
 
     def add_input(self, name, label, label_width=None, style="DataIO", stack=False, faded=False):

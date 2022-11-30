@@ -332,6 +332,19 @@ class TestXDSM(unittest.TestCase):
         self.assertEqual(x.systems[0].stack, True)
         self.assertEqual(x.systems[1].label, "cons_new")
 
+    def test_inserting_systems_before_or_after(self):
+        x = XDSM()
+        x.add_system("F", FUNC, "F")
+        x.add_system("G", FUNC, "G")
+        x.add_system("F2", FUNC, "F2", after="F")
+        x.add_system("E", FUNC, "E", before="F")
+        x.add_system("H", FUNC, "H")
+        x.add_system("I", FUNC, "I", after="H")
+        x.add_system("J", FUNC, "J", after="N/A")
+        x.add_system("K", FUNC, "K", before="N/A")
+        x.add_system("F3", FUNC, "F3", before="G")
+        self.assertEqual([system.node_name for system in x.systems], ["E", "F", "F2", "F3", "G", "H", "I", "J", "K"])
+
 
 if __name__ == "__main__":
     unittest.main()
