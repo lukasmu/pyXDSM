@@ -3,7 +3,7 @@ import os
 import numpy as np
 import json
 import subprocess
-from recordclass import recordclass
+from dataclasses import dataclass
 
 from pyxdsm import __version__ as pyxdsm_version
 
@@ -110,10 +110,47 @@ def _label_to_spec(label, spec):
             spec.add(var)
 
 
-System = recordclass("System", "node_name style label stack faded label_width spec_name")
-Input = recordclass("Input", "node_name label label_width style stack faded")
-Output = recordclass("Output", "node_name label label_width style stack faded side")
-Connection = recordclass("Connection", "src target label label_width style stack faded")
+@dataclass
+class System:
+    node_name: str
+    style: str
+    label: str
+    stack: bool
+    faded: bool
+    label_width: int
+    spec_name: str
+
+
+@dataclass
+class Input:
+    node_name: str
+    label: str
+    label_width: int
+    style: str
+    stack: bool
+    faded: bool
+
+
+@dataclass
+class Output:
+    node_name: str
+    label: str
+    label_width: int
+    style: str
+    stack: bool
+    faded: bool
+    side: str
+
+
+@dataclass
+class Connection:
+    src: str
+    target: str
+    label: str
+    label_width: int
+    style: str
+    stack: bool
+    faded: bool
 
 
 class XDSM(object):
@@ -514,9 +551,9 @@ class XDSM(object):
     def _build_process_chain(self):
         sys_names = [s.node_name for s in self.systems]
         output_names = (
-            [data[0] for _, data in self.ins.items()]
-            + [data[0] for _, data in self.left_outs.items()]
-            + [data[0] for _, data in self.right_outs.items()]
+            [data.node_name for _, data in self.ins.items()]
+            + [data.node_name for _, data in self.left_outs.items()]
+            + [data.node_name for _, data in self.right_outs.items()]
         )
         # comp_name, in_data in self.ins.items():
         #     node_name, style, label, stack = in_data
