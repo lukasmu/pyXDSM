@@ -329,8 +329,8 @@ class TestXDSM(unittest.TestCase):
         g = x.add_system("cons", IFUNC, "cons")
         f.stack = True
         g.label = "cons_new"
-        self.assertEqual(x.systems[0].stack, True)
-        self.assertEqual(x.systems[1].label, "cons_new")
+        self.assertEqual(x.systems["func"].stack, True)
+        self.assertEqual(x.systems["cons"].label, "cons_new")
 
 
 if __name__ == "__main__":

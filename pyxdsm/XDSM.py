@@ -4,6 +4,7 @@ import numpy as np
 import json
 import subprocess
 from dataclasses import dataclass
+from collections import OrderedDict
 
 from pyxdsm import __version__ as pyxdsm_version
 
@@ -112,7 +113,6 @@ def _label_to_spec(label, spec):
 
 @dataclass
 class System:
-    node_name: str
     style: str
     label: str
     stack: bool
@@ -164,7 +164,7 @@ class XDSM(object):
         optional_latex_packages : string or list of strings, optional
             Additional latex packages to use when creating the pdf and tex versions of the diagram, by default None
         """
-        self.systems = []
+        self.systems = OrderedDict()
         self.connections = []
         self.left_outs = {}
         self.right_outs = {}
@@ -231,8 +231,8 @@ class XDSM(object):
         if spec_name is None:
             spec_name = node_name
 
-        sys = System(node_name, style, label, stack, faded, label_width, spec_name)
-        self.systems.append(sys)
+        sys = System(style, label, stack, faded, label_width, spec_name)
+        self.systems[node_name] = sys
         return sys
 
     def add_input(self, name, label, label_width=None, style="DataIO", stack=False, faded=False):
@@ -419,7 +419,7 @@ class XDSM(object):
         grid[:] = ""
 
         # add all the components on the diagonal
-        for i_row, j_col, comp in zip(comps_rows, comps_cols, self.systems):
+        for i_row, j_col, comp_name, comp in zip(comps_rows, comps_cols, self.systems.keys(), self.systems.values()):
             style = comp.style
             if comp.stack:
                 style += ",stack"
@@ -427,11 +427,11 @@ class XDSM(object):
                 style += ",faded"
 
             label = _parse_label(comp.label, comp.label_width)
-            node = node_str.format(style=style, node_name=comp.node_name, node_label=label)
+            node = node_str.format(style=style, node_name=comp_name, node_label=label)
             grid[i_row, j_col] = node
 
-            row_idx_map[comp.node_name] = i_row
-            col_idx_map[comp.node_name] = j_col
+            row_idx_map[comp_name] = i_row
+            col_idx_map[comp_name] = j_col
 
         # add all the off diagonal nodes from components
         for conn in self.connections:
@@ -549,7 +549,7 @@ class XDSM(object):
         return paths_str
 
     def _build_process_chain(self):
-        sys_names = [s.node_name for s in self.systems]
+        sys_names = self.systems.keys()
         output_names = (
             [data.node_name for _, data in self.ins.items()]
             + [data.node_name for _, data in self.left_outs.items()]
@@ -700,8 +700,8 @@ class XDSM(object):
 
         # find un-connected to each system by looking at Inputs
         specs = {}
-        for sys in self.systems:
-            specs[sys.node_name] = {"inputs": set(), "outputs": set()}
+        for sys in self.systems.keys():
+            specs[sys] = {"inputs": set(), "outputs": set()}
 
         for sys_name, inp in self.ins.items():
             _label_to_spec(inp.label, specs[sys_name]["inputs"])
@@ -721,11 +721,11 @@ class XDSM(object):
         if not os.path.isdir(folder_name):
             os.mkdir(folder_name)
 
-        for sys in self.systems:
+        for sys_name, sys in self.systems.items():
             if sys.spec_name is not False:
                 path = os.path.join(folder_name, sys.spec_name + ".json")
                 with open(path, "w") as f:
-                    spec = specs[sys.node_name]
+                    spec = specs[sys_name]
                     spec["inputs"] = list(spec["inputs"])
                     spec["outputs"] = list(spec["outputs"])
                     json_str = json.dumps(spec, indent=2)
